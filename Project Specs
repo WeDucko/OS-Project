@@ -1,0 +1,75 @@
+Text ZIP
+In this project, you'll speed up text compression tool. This tool receives a folder with uncompressed text files (".txt" extension) and creates a single zip file after compression. Files in the input folder will have a number as their file name, and the output zip file follows lexicographical order.
+
+This is a group project. Each group must have at least 3 members and at most 4 members. If you cannot find a group by (Oct 28th), you will be randomly assigned to a random group after that.
+
+To make a group, go to People on Canvas and click the Project 2 tab. You can drag students into any of the pre-created groups, Group 1 through Group 61. Make sure that you are in the correct group with your teammates and select a leader for your group.
+
+FAQs:
+- I wanna work by myself, is this allowed? Answer: No
+- My group has only two people, is this allowed? Answer: No
+- My group has more than four people, is this allowed? Answer: No
+- I want to work with students from the other section, is that allowed? Answer: No
+
+Task description
+1) Download the starting package here Download hereDownload here.
+
+2) Unzip, build, and run the tool. You might have to install the zlibLinks to an external site. library.
+
+$ unzip project2.zip
+$ cd project2
+$ make
+$ make test
+$ make test2
+If $ make test or $ make test2 gives an error, you may need to change the permissions of check.sh.
+
+$ chmod u+x check.sh
+3) Change the code in the file serial.c and serial.h to make it faster using threads. You cannot modify or add other files (Makefile, main.c, check.sh). You are only allowed to use the pthread library to this end, nothing else. Using other libraries, changing compiler flags, and other tricks are not allowed. If, at any point in time, your program has more than 20 threads (including the main thread) in execution, your submission will be deemed invalid. In other words, you cannot have more than 20 threads running simultaneously.
+
+Submission
+The submission is divided in two parts.
+
+PART #1: The correctness of your submissions will be automatically evaluated by Gradescope. You must prepare a file named project2.zip containing a folder named src. This folder must contain your source code (serial.c and serial.h) in C language (other languages are not allowed). This code must be buildable and runnable in a Linux environment with a recent version gcc (more precisely, gcc version 11.4.0 with Ubuntu 11.4.0-1ubuntu1 22.04). Your code will be tested in a machine with 4.0 CPU cores and 6.0GB of RAM. 
+
+When you submit your group project on Gradescope, list group members to ensure everyone receives credit. Any member not included in the submission and who did not submit a project in Gradescope, may receive a 0 from the speed factor. You don't need to share your project with a member who didn't contribute.
+
+PART #2:
+
+Your group must create a video presenting your approach to speed up the tool (at least 5 minutes, at most 10 minutes). The video must be submitted through Canvas. What to include in your presentation?
+
+Names and pictures of all group members that contributed to the project  in the first slide.
+Teamwork strategy. How the work was divided? Who did what?
+Which ideas were considered? How many of them were implemented? Why? How the different implementations compared to each other?
+What was you final result? What else could have improved this result?
+What not to include in your presentation?
+
+Code. We can see the submitted code on Gradescope. We want to understand your solution. Be creative. Draw stuff. Create analysis plots. Use GenAI to create great visual aids.
+You don't need to share your project with a member who didn't contribute. Any member not included in the video and who did not submit one in Canvas, may receive a 0 from presentation.
+
+Rubrics
+Speeding factor: 50%
+Code style: 10%
+Presentation: 40%
+
+The speedup is calculated using the formula.
+
+Speedup = 
+
+Speeding factor = (Speedup - 0.5) * 10
+
+Speedup between 3.5 and 4.5 --> 30 to 40 points
+Speedup between 4.5 and 5.5 --> 40 to 50 points
+Speedup 5.5 or higher --> 50 points
+Code style will have deductions for bad indentation and organization, and for the lack of meaningful comments.
+
+Compilation warning: -3 points
+Comments: 7 points
+Group/Authors/NetID/Description in the beginning of the program (2 points)
+Meaningful comments in the program (5 points)
+Indentation: 3 points
+4 spaces recommended
+Missing or incorrect indentation will get deduction
+Gradescope
+Your submission will be test with a different dataset from the starting package. 
+
+Do not share your code or copy other’s code: code similarity is checked for every project and high similarity may result in a score of 0 for the project.
