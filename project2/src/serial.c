@@ -8,11 +8,49 @@
 #include <stdlib.h>
 #include <string.h>
 #include <zlib.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #define BUFFER_SIZE 1048576 // 1MB
 
+static int endsWithTxt(const char *name) {
+	size_t len = strlen(name);
+	if (len < 4) {
+		return 0;
+	}
+	
+	return (name[len-4]=='.' && name[len-3]=='t' && name[len-2]=='x' && name[len-1]=='t');
+}
+
+
+
 int cmp(const void *a, const void *b) {
 	return strcmp(*(char **) a, *(char **) b);
+}
+
+typedef struct {
+	unsigned char *buf;
+	int zip_size;
+	int in_size;
+	int ready;
+	pthread_mutex_t m;
+	pthread_cond_t cv;
+} return_t
+
+static void result_init(result_t *r) {
+	r->buf = NULL;
+	r->zip_size = 0;
+	r->in_size = 0;
+	r->ready = 0;
+	pthread_mutex_init(&r->m, NULL);
+	pthread_cont_init(&r->cv, NULL);
+}
+
+static void result_destroy(result_t *r) {
+	if (r->buf) free(r->buf);
+	pthread_cont_destroy(&r->cv)
+	pthread_mutex_destroy(&r-m)
 }
 
 int compress_directory(char *directory_name) {
