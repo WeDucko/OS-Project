@@ -1,3 +1,7 @@
+// Project 2
+// Group 30
+// Martin Ganen-Villa U49246681, Jacob Cooksey, Nicholas Keenan, Riley Langworhy
+
 #include <dirent.h> 
 #include <stdio.h> 
 #include <assert.h>
