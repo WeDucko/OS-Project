@@ -36,7 +36,7 @@ typedef struct {
 	int ready;
 	pthread_mutex_t m;
 	pthread_cond_t cv;
-} return_t
+} result_t;
 
 static void result_init(result_t *r) {
 	r->buf = NULL;
@@ -44,13 +44,71 @@ static void result_init(result_t *r) {
 	r->in_size = 0;
 	r->ready = 0;
 	pthread_mutex_init(&r->m, NULL);
-	pthread_cont_init(&r->cv, NULL);
+	pthread_cond_init(&r->cv, NULL);
 }
 
 static void result_destroy(result_t *r) {
 	if (r->buf) free(r->buf);
-	pthread_cont_destroy(&r->cv)
-	pthread_mutex_destroy(&r-m)
+	pthread_cond_destroy(&r->cv);
+	pthread_mutex_destroy(&r->m);
+}
+
+typedef struct {
+	int *items;
+	int cap, head, tail, count;
+	int closed;
+	pthread_mutex_t m;
+	pthread_cond_t not_empty, not_full;
+} queue_t;
+
+
+static void queue_init(queue_t *q, int cap) {
+	q->items = (int*)malloc(sizeof(int)*cap);
+	assert(q->items != NULL);
+
+	q->cap = cap;
+	q->head = 0;
+	q->tail = 0;
+	q->count = 0;
+	q->closed = 0;
+
+	pthread_mutex_init(&q->m, NULL);
+	pthread_cond_init(&q->not_empty, NULL);
+	pthread_cond_init(&q->not_full, NULL);
+}
+
+static void queue_close(queue_t *q) {
+	pthread_mutex_lock(&q->m);
+	q->closed = 1;
+	pthread_cond_broadcast(&q->not_empty);
+	pthread_mutex_unlock(&q->m);
+}
+
+static int queue_destroy(queue_t *q) {
+	free(q->items);
+	pthread_cond_destroy(&q->not_empty);
+	pthread_cond_destroy(&q->not_full);
+	pthread_mutex_destroy(&q->m);
+}
+
+static int queue_push(queue_t *q, int v) {
+	pthread_mutex_lock(&q->m);
+
+	while (q->count == q->cap && !q->closed) {
+		pthread_cond_wait(&q->not_full, &q->m);
+	}
+
+	if (q->closed) {
+		pthread_mutex_unlock(&q->m);
+		return -1;
+	}
+
+	q->items[q->tail] = v;
+	q->tail = (q->tail + 1);
+	q->count++;
+	pthread_cond_signal(&q->not_empty);
+	pthread_mutex_unlock(&q->m);
+	return 0;
 }
 
 int compress_directory(char *directory_name) {
