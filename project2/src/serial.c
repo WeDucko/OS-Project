@@ -111,6 +111,34 @@ static int queue_push(queue_t *q, int v) {
 	return 0;
 }
 
+static int queue_pop(queue_t *q, int *out) {
+	pthread_mutex_lock(&q->m);
+	while (q->count == 0 && !q->closed) {
+		pthread_cond_wait(&q->not_empty, &q->m);
+	}
+
+	if (q->count == 0 && q->closed) {
+		pthread_mutex_unlock(&q->m);
+		return -1;
+	}
+
+	*out = q->items[q->head];
+	q->head = (q->head + 1) % q->cap;
+	q->count--;
+	pthread_cond_signal(&q->not_full);
+	pthread_mutex_unlock(&Q->m);
+	return 0;
+
+}
+
+typedef struct {
+	queue_t *queue;
+	char **files;
+	const char *directory;
+	result_t results;
+} worker_arg_t;
+
+
 int compress_directory(char *directory_name) {
 	DIR *d;
 	struct dirent *dir;
