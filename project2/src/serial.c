@@ -138,6 +138,29 @@ typedef struct {
 	result_t results;
 } worker_arg_t;
 
+static void *worker(void *arg) {
+	worker_arg_t *wa = (worker_arg_t *)arg;
+	queue_t *q = wa->queue;
+	char **files = wa->files;
+	const char *directory = wa->directory;
+	result_t *results = wa->results;
+
+	for (;;) {
+		int idx;
+		if (queue_pop(q, &idx) != 0) {
+			break;
+		}
+
+		int len = (int)strlen(directory) + (int)strlen(files[idx]) + 2;
+		char *full_path = (char *)malloc(len);
+		assert(full_path != NULL);
+
+		strcpy(full_path, directory);
+		strcat(full_path, "/");
+		strcat(full_path, files[idx]);
+		
+	}
+}
 
 int compress_directory(char *directory_name) {
 	DIR *d;
