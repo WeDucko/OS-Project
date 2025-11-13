@@ -1,6 +1,8 @@
-// Project 2
+// Project 2 - Parallel Text Compression
 // Group 30
-// Martin Ganen-Villa U49246681, Jacob Cooksey, Nicholas Keenan, Riley Langworhy
+// Martin Ganen-Villa U49246681, Jacob Cooksey U39145995, Nicholas Keenan U63119825, Riley Langworhy U44956927
+// This program parallelizes text file compression using a producer-consumer pattern
+// with worker threads that compress files concurrently while maintaining output order
 
 #include <dirent.h> 
 #include <stdio.h> 
@@ -12,9 +14,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#define BUFFER_SIZE 1048576 // 1MB
-#define NUM_THREADS 4
-#define QUEUE_SIZE 50
+#define BUFFER_SIZE 1048576 // 1MB buffer for file I/O
+#define NUM_THREADS 8 // Number of worker threads for parallel compression
+#define QUEUE_SIZE 100 // Maximum queue capacity for work items
 
 // Compare function for qsort
 int cmp(const void *a, const void *b) {
@@ -116,14 +118,15 @@ typedef struct {
 	result_t *results;
 } worker_arg_t;
 
-// Worker thread function
+// Worker thread function - processes compression tasks from the queue
 static void *worker(void *arg) {
 	worker_arg_t *wa = (worker_arg_t *)arg;
 	
 	for (;;) {
 		int idx;
+		// Get next file index from queue
 		if (queue_pop(wa->queue, &idx) != 0) {
-			break;
+			break;  // Queue closed, exit thread
 		}
 
 		// Build full path
@@ -155,7 +158,7 @@ static void *worker(void *arg) {
 		int nbytes = fread(buffer_in, sizeof(unsigned char), BUFFER_SIZE, f_in);
 		fclose(f_in);
 
-		// Compress file
+		// Compress file using zlib
 		z_stream strm;
 		strm.zalloc = Z_NULL;
 		strm.zfree = Z_NULL;
@@ -185,7 +188,7 @@ static void *worker(void *arg) {
 		int nbytes_zipped = BUFFER_SIZE - strm.avail_out;
 		deflateEnd(&strm);
 
-		// Store result
+		// Store compressed result in results array with synchronization
 		pthread_mutex_lock(&wa->results[idx].m);
 		wa->results[idx].buf = (unsigned char *)malloc(nbytes_zipped);
 		if (wa->results[idx].buf) {
@@ -239,7 +242,7 @@ int compress_directory(char *directory_name) {
 	
 	qsort(files, nfiles, sizeof(char *), cmp);
 
-	// Initialize results array
+	// Initialize results array for storing compressed data
 	result_t *results = (result_t *)malloc(nfiles * sizeof(result_t));
 	assert(results != NULL);
 	for (i = 0; i < nfiles; i++) {
@@ -251,7 +254,7 @@ int compress_directory(char *directory_name) {
 		pthread_cond_init(&results[i].cv, NULL);
 	}
 
-	// Create queue
+	// Create work queue for distributing files to worker threads
 	queue_t queue;
 	queue_init(&queue, QUEUE_SIZE);
 	
@@ -268,26 +271,26 @@ int compress_directory(char *directory_name) {
 		pthread_create(&threads[i], NULL, worker, &wa);
 	}
 
-	// Push all file indices to queue
+	// Push all file indices to queue for processing
 	for (i = 0; i < nfiles; i++) {
 		queue_push(&queue, i);
 	}
-	queue_close(&queue);
+	queue_close(&queue);  // Signal no more work items
 
-	// Write output file
+	// Write compressed files to output in lexicographical order
 	int total_in = 0, total_out = 0;
 	FILE *f_out = fopen("text.tzip", "wb");
 	assert(f_out != NULL);
 	
 	for (i = 0; i < nfiles; i++) {
-		// Wait for result
+		// Wait for this file's compression to complete
 		pthread_mutex_lock(&results[i].m);
 		while (!results[i].ready) {
 			pthread_cond_wait(&results[i].cv, &results[i].m);
 		}
 		pthread_mutex_unlock(&results[i].m);
 
-		// Write result
+		// Write compressed data to output file
 		fwrite(&results[i].zip_size, sizeof(int), 1, f_out);
 		fwrite(results[i].buf, sizeof(unsigned char), results[i].zip_size, f_out);
 		total_in += results[i].in_size;
@@ -297,12 +300,12 @@ int compress_directory(char *directory_name) {
 
 	printf("Compression rate: %.2lf%%\n", 100.0*(total_in-total_out)/total_in);
 
-	// Wait for threads
+	// Wait for all worker threads to complete
 	for (i = 0; i < NUM_THREADS; i++) {
 		pthread_join(threads[i], NULL);
 	}
 
-	// Cleanup
+	// Clean up allocated resources
 	queue_destroy(&queue);
 	for (i = 0; i < nfiles; i++) {
 		if (results[i].buf) free(results[i].buf);
